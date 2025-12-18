@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getUserProfile } from './services/api';
 import UserProfile from './components/UserProfile';
 import CheckInButton from './components/CheckInButton';
+import CheckInHistory from './components/CheckInHistory';
 import './App.css';
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
     const token = urlParams.get('token');
 
     if (!token) {
-      setError('ไม่พบ token ใน URL กรุณาตรวจสอบลิงก์');
+      setError('Token not found in URL. Please check the link');
       setLoading(false);
       return;
     }
@@ -34,10 +35,10 @@ function App() {
       if (result.success) {
         setUser(result.data);
       } else {
-        setError(result.error || 'ไม่สามารถดึงข้อมูลผู้ใช้ได้');
+        setError(result.error || 'Unable to fetch user data');
       }
     } catch (err) {
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      setError('Connection error occurred');
       console.error('Error fetching user profile:', err);
     } finally {
       setLoading(false);
@@ -47,6 +48,7 @@ function App() {
   const handleCheckInSuccess = (data) => {
     console.log('Check-in successful:', data);
     // สามารถเพิ่ม logic เพิ่มเติมได้ เช่น refresh ข้อมูล
+    // Note: CheckInHistory component จะ refresh อัตโนมัติเมื่อมีการ check-in ใหม่
   };
 
   if (loading) {
@@ -54,7 +56,7 @@ function App() {
       <div className="app-container">
         <div className="loading-container">
           <div className="spinner-large"></div>
-          <p>กำลังโหลดข้อมูล...</p>
+          <p>Loading data...</p>
         </div>
       </div>
     );
@@ -65,10 +67,10 @@ function App() {
       <div className="app-container">
         <div className="error-container">
           <div className="error-icon">⚠️</div>
-          <h2>เกิดข้อผิดพลาด</h2>
+          <h2>Error</h2>
           <p>{error}</p>
           <button onClick={() => window.location.reload()} className="retry-button">
-            ลองอีกครั้ง
+            Try Again
           </button>
         </div>
       </div>
@@ -79,7 +81,7 @@ function App() {
     return (
       <div className="app-container">
         <div className="error-container">
-          <p>ไม่พบข้อมูลผู้ใช้</p>
+          <p>User data not found</p>
         </div>
       </div>
     );
@@ -89,10 +91,11 @@ function App() {
     <div className="app-container">
       <div className="app-header">
         <h1>Superwork Check-in</h1>
-        <p className="subtitle">ระบบบันทึกการเข้างาน</p>
+        <p className="subtitle">Attendance Recording System</p>
       </div>
       <UserProfile user={user} />
       <CheckInButton user={user} onCheckInSuccess={handleCheckInSuccess} />
+      <CheckInHistory userId={user.id} />
     </div>
   );
 }

@@ -27,15 +27,15 @@ export default function UserProfile({ user }) {
       </div>
       <div className="profile-details">
         <div className="detail-item">
-          <span className="label">ตำแหน่ง:</span>
+          <span className="label">Position:</span>
           <span className="value">{user.position?.name || 'N/A'}</span>
         </div>
         <div className="detail-item">
-          <span className="label">องค์กร:</span>
+          <span className="label">Organization:</span>
           <span className="value">{user.joinOrganization?.organization?.name || 'N/A'}</span>
         </div>
         <div className="detail-item">
-          <span className="label">สถานะ:</span>
+          <span className="label">Status:</span>
           <span className="value">{user.statusJoinedOrganization || 'N/A'}</span>
         </div>
       </div>

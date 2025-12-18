@@ -30,7 +30,7 @@ export default function CheckInButton({ user, onCheckInSuccess }) {
       const result = await checkDuplicate(user.id, today);
       if (result.success && result.exists) {
         setAlreadyCheckedIn(true);
-        setMessage('คุณได้ทำการ check-in แล้ววันนี้');
+        setMessage('You have already checked in today');
         setMessageType('info');
       } else if (result.success && !result.exists) {
         // ถ้ายังไม่ check-in ให้ล้างข้อความ
@@ -47,19 +47,21 @@ export default function CheckInButton({ user, onCheckInSuccess }) {
 
   const handleCheckIn = async (type = 'Manual') => {
     if (!user) {
-      setMessage('ไม่พบข้อมูลผู้ใช้');
+      setMessage('User data not found');
       setMessageType('error');
       return;
     }
 
     setLoading(true);
-    setMessage('');
+    // Show message for getting location for both QR Code and Manual
+    setMessage('Getting current location...');
+    setMessageType('info');
 
     try {
       const result = await checkIn(user, type);
 
       if (result.success) {
-        setMessage(result.message || 'Check-in สำเร็จ');
+        setMessage(result.message || 'Check-in successful');
         setMessageType('success');
         setAlreadyCheckedIn(true);
         if (onCheckInSuccess) {
@@ -67,16 +69,20 @@ export default function CheckInButton({ user, onCheckInSuccess }) {
         }
       } else {
         if (result.duplicate) {
-          setMessage('คุณได้ทำการ check-in แล้ววันนี้');
+          setMessage('You have already checked in today');
           setMessageType('info');
           setAlreadyCheckedIn(true);
+        } else if (result.requiresLocation) {
+          // Location is required but not available
+          setMessage(result.message || 'Unable to get location. Please allow location access');
+          setMessageType('error');
         } else {
-          setMessage(result.message || 'Check-in ไม่สำเร็จ');
+          setMessage(result.message || 'Check-in failed');
           setMessageType('error');
         }
       }
     } catch (error) {
-      setMessage('เกิดข้อผิดพลาดในการ check-in');
+      setMessage('An error occurred during check-in');
       setMessageType('error');
       console.error('Check-in error:', error);
     } finally {
@@ -99,9 +105,9 @@ export default function CheckInButton({ user, onCheckInSuccess }) {
               onClick={() => setShowQRScanner(true)}
               disabled={loading}
             >
-              📷 สแกน QR Code
+              📷 Scan QR Code
             </button>
-            <div className="or-divider">หรือ</div>
+            <div className="or-divider">or</div>
           </div>
         )}
         
@@ -113,17 +119,17 @@ export default function CheckInButton({ user, onCheckInSuccess }) {
           {loading ? (
             <>
               <span className="spinner"></span>
-              กำลังดำเนินการ...
+              Processing...
             </>
           ) : checkingStatus ? (
             <>
               <span className="spinner"></span>
-              กำลังตรวจสอบ...
+              Checking...
             </>
           ) : alreadyCheckedIn ? (
-            '✓ Check-in แล้ววันนี้'
+            '✓ Checked in today'
           ) : (
-            'Check-in แบบ Manual'
+            'Manual Check-in'
           )}
         </button>
 

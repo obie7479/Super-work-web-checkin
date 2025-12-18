@@ -4,6 +4,23 @@
   padding: 24px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   text-align: center;
+  margin: 0 16px 16px;
+}
+
+@media (max-width: 768px) {
+  .checkin-container {
+    margin: 0 12px 12px;
+    padding: 20px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkin-container {
+    margin: 0 8px 8px;
+    padding: 16px;
+    border-radius: 12px;
+  }
 }
 
 .checkin-options {
@@ -22,6 +39,26 @@
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 16px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 48px;
+}
+
+@media (max-width: 768px) {
+  .qr-button {
+    padding: 16px 20px;
+    font-size: 15px;
+    min-height: 50px;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .qr-button {
+    padding: 14px 18px;
+    font-size: 14px;
+    min-height: 48px;
+  }
 }
 
 .qr-button:hover:not(:disabled) {
@@ -65,7 +102,7 @@
   font-size: 18px;
   font-weight: 600;
   color: white;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3B82F6 0%, #122991 100%);
   border: none;
   border-radius: 12px;
   cursor: pointer;
@@ -75,6 +112,26 @@
   justify-content: center;
   gap: 12px;
   min-height: 56px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile: Larger touch targets */
+@media (max-width: 768px) {
+  .checkin-button {
+    padding: 18px 24px;
+    font-size: 16px;
+    min-height: 52px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkin-button {
+    padding: 16px 20px;
+    font-size: 15px;
+    min-height: 50px;
+  }
 }
 
 .checkin-button:hover:not(.disabled):not(.loading) {

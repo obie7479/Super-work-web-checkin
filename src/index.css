@@ -10,16 +10,38 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3B82F6 0%, #122991 100%);
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 20px;
+  align-items: flex-start;
+  padding: 0;
+  margin: 0;
+  overflow-x: hidden;
 }
 
 #root {
   width: 100%;
   max-width: 600px;
+  min-height: 100vh;
+}
+
+/* Mobile-first: Full width on small screens */
+@media (max-width: 768px) {
+  body {
+    align-items: flex-start;
+    padding: 0;
+  }
+  
+  #root {
+    max-width: 100%;
+  }
+}
+
+/* Prevent text selection on buttons for better mobile UX */
+button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
