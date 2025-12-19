@@ -20,7 +20,7 @@
   height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #667eea;
+  border: 4px solid #122991;
 }
 
 .profile-info {
@@ -36,7 +36,7 @@
 
 .role {
   font-size: 16px;
-  color: #667eea;
+  color: #122991;
   font-weight: 500;
   margin-bottom: 4px;
 }
