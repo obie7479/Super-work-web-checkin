@@ -67,16 +67,47 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
       setError('');
       setShowPermissionDialog(false); // Hide dialog when requesting permission
       
-      // Request camera access explicitly - prefer back camera on mobile
-      const constraints = {
-        video: {
-          facingMode: { ideal: 'environment' }, // Prefer back camera
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+      // Try different constraint configurations to maximize compatibility
+      const constraintsList = [
+        // First try with ideal constraints for back camera
+        {
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        },
+        // Fallback to basic environment camera without size constraints
+        {
+          video: {
+            facingMode: 'environment'
+          }
+        },
+        // Fallback to any available camera
+        {
+          video: true
         }
-      };
+      ];
       
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream = null;
+      let lastError = null;
+      
+      // Try each constraint configuration until one works
+      for (const constraints of constraintsList) {
+        try {
+          console.log('Trying camera constraints:', constraints);
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          console.log('Successfully got camera stream with constraints:', constraints);
+          break; // Success, exit loop
+        } catch (err) {
+          lastError = err;
+          console.log(`Failed with constraints:`, constraints, 'Error:', err.message);
+        }
+      }
+      
+      if (!stream) {
+        throw lastError || new Error('Failed to access camera');
+      }
       
       // Stop the stream immediately - we just needed permission
       stream.getTracks().forEach(track => track.stop());
@@ -103,9 +134,11 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
           setError('Camera access denied. Please allow camera access in your browser settings');
         }
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        setError('No camera found on your device');
+        setError('No camera found on your device. Please ensure a camera is connected and accessible.');
       } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        setError('Unable to access camera. Camera may be in use by another app');
+        setError('Unable to access camera. Camera may be in use by another app. Please close other apps and try again.');
+      } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+        setError('Camera configuration not supported. Please try with a different device.');
       } else {
         setError('Unable to access camera: ' + err.message);
       }
@@ -137,36 +170,70 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
       // Adjust QR box size for mobile
       const qrboxSize = isMobile ? { width: 250, height: 250 } : { width: 300, height: 300 };
 
-      await html5QrCode.start(
+      // Try different camera configurations
+      const cameraConfigs = [
+        // First try with environment camera
         { 
-          facingMode: { ideal: 'environment' }, // Prefer back camera on mobile
-          aspectRatio: { ideal: 1.7777777778 } // 16:9 aspect ratio
+          facingMode: { ideal: 'environment' },
+          aspectRatio: { ideal: 1.7777777778 }
         },
-        {
-          fps: isMobile ? 10 : 15, // Lower FPS on mobile for better performance
-          qrbox: qrboxSize,
-          aspectRatio: 1.0,
-          disableFlip: false // Allow rotation
+        // Fallback to environment camera without aspect ratio
+        { 
+          facingMode: 'environment'
         },
-        (decodedText, decodedResult) => {
-          // ตรวจสอบว่า QR code ถูกต้องหรือไม่
-          if (decodedText === QR_CODE_VALUE) {
-            html5QrCode.stop().then(() => {
-              setIsScanning(false);
-              onScanSuccess('QR Code');
-            }).catch(() => {
-              setIsScanning(false);
-            });
-          } else {
-            setError('Invalid QR Code. Please scan the correct QR Code');
-            // Don't stop scanning, let user try again
-          }
-        },
-        (errorMessage) => {
-          // ข้อความ error จะถูกแสดงเมื่อสแกนไม่สำเร็จ (ไม่ใช่ error จริง)
-          // ไม่ต้องทำอะไร
+        // Fallback to any camera
+        { 
+          facingMode: 'user'
         }
-      );
+      ];
+
+      let started = false;
+      let lastError = null;
+
+      // Try each camera config until one works
+      for (const cameraConfig of cameraConfigs) {
+        try {
+          console.log('Trying camera config:', cameraConfig);
+          await html5QrCode.start(
+            cameraConfig,
+            {
+              fps: isMobile ? 10 : 15, // Lower FPS on mobile for better performance
+              qrbox: qrboxSize,
+              aspectRatio: 1.0,
+              disableFlip: false // Allow rotation
+            },
+            (decodedText, decodedResult) => {
+              // ตรวจสอบว่า QR code ถูกต้องหรือไม่
+              if (decodedText === QR_CODE_VALUE) {
+                html5QrCode.stop().then(() => {
+                  setIsScanning(false);
+                  onScanSuccess('QR Code');
+                }).catch(() => {
+                  setIsScanning(false);
+                });
+              } else {
+                setError('Invalid QR Code. Please scan the correct QR Code');
+                // Don't stop scanning, let user try again
+              }
+            },
+            (errorMessage) => {
+              // ข้อความ error จะถูกแสดงเมื่อสแกนไม่สำเร็จ (ไม่ใช่ error จริง)
+              // ไม่ต้องทำอะไร
+            }
+          );
+          console.log('Successfully started QR scanner with config:', cameraConfig);
+          started = true;
+          break; // Success, exit loop
+        } catch (err) {
+          lastError = err;
+          console.log('Failed to start with config:', cameraConfig, 'Error:', err.message);
+        }
+      }
+
+      // If none of the configs worked, throw the last error
+      if (!started) {
+        throw lastError || new Error('Failed to start QR scanner');
+      }
     } catch (err) {
       console.error('Error starting QR scanner:', err);
       
