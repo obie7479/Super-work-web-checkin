@@ -108,41 +108,12 @@ https://xxxx-xxxx-xxxx.ngrok-free.app/superwork?token=YOUR_TOKEN
 2. ตรวจสอบว่า WiFi เดียวกัน
 3. ลองใช้ IP address โดยตรง
 
-### ⚠️ ปัญหาสำคัญ: QR Code Scanner ไม่ทำงานบนมือถือ
+### ปัญหา: QR Code Scanner ไม่ทำงานบนมือถือ
 
-**สาเหตุ:** กล้องบนมือถือต้องใช้ HTTPS เท่านั้น (ข้อกำหนดด้านความปลอดภัยของ browser)
+**วิธีแก้:**
 
-**วิธีแก้ไขด่วน - ใช้ ngrok (แนะนำ):**
-
-```bash
-# 1. ติดตั้ง ngrok
-brew install ngrok  # สำหรับ macOS
-
-# 2. รัน dev server
-npm run dev
-
-# 3. เปิด tunnel HTTPS
-ngrok http 5173
-
-# 4. ใช้ URL ที่ได้ (https://xxxx.ngrok-free.app)
-```
-
-**วิธีแก้ไขถาวร - สร้าง Certificate:**
-
-```bash
-# 1. สร้าง self-signed certificate
-npm run cert
-
-# 2. รัน server
-npm run dev
-
-# 3. เข้าผ่าน HTTPS
-https://192.168.x.x:5173
-```
-
-**หมายเหตุ:**
-1. ต้องใช้ HTTPS หรือ localhost เท่านั้น
-2. HTTP ปกติ (http://192.168.x.x) **ไม่สามารถ** เปิดกล้องได้
+1. ตรวจสอบว่าใช้ HTTPS หรือ localhost (HTTP ทำงานได้บน localhost)
+2. อนุญาตการเข้าถึงกล้อง
 3. ใช้ Chrome บน Android หรือ Safari บน iOS
 
 ### ปัญหา: CORS Error

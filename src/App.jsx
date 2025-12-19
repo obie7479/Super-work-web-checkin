@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { getUserProfile } from './services/api';
 import UserProfile from './components/UserProfile';
 import CheckInButton from './components/CheckInButton';
-import CheckInHistory from './components/CheckInHistory';
 import './App.css';
 
 function App() {
@@ -11,7 +10,7 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // อ่าน token จาก URL query parameter
+    // Read token from URL query parameter
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
 
@@ -21,7 +20,7 @@ function App() {
       return;
     }
 
-    // ดึงข้อมูล user
+    // Fetch user data
     fetchUserProfile(token);
   }, []);
 
@@ -47,8 +46,7 @@ function App() {
 
   const handleCheckInSuccess = (data) => {
     console.log('Check-in successful:', data);
-    // สามารถเพิ่ม logic เพิ่มเติมได้ เช่น refresh ข้อมูล
-    // Note: CheckInHistory component จะ refresh อัตโนมัติเมื่อมีการ check-in ใหม่
+    // Additional logic can be added here, such as refreshing data
   };
 
   if (loading) {
@@ -67,7 +65,7 @@ function App() {
       <div className="app-container">
         <div className="error-container">
           <div className="error-icon">⚠️</div>
-          <h2>Error</h2>
+          <h2>An error occurred</h2>
           <p>{error}</p>
           <button onClick={() => window.location.reload()} className="retry-button">
             Try Again
@@ -91,12 +89,10 @@ function App() {
     <div className="app-container">
       <div className="app-header">
         <h1>Superwork Check-in</h1>
-        <p className="subtitle">Attendance Recording System</p>
+        <p className="subtitle">Work Attendance System</p>
       </div>
-      
       <UserProfile user={user} />
       <CheckInButton user={user} onCheckInSuccess={handleCheckInSuccess} />
-      <CheckInHistory userId={user.id} />
     </div>
   );
 }

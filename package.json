@@ -5,16 +5,15 @@
     "type": "module",
     "scripts": {
         "dev": "vite --host",
-        "dev:https": "vite --host --https",
         "build": "vite build",
-        "preview": "vite preview --host",
-        "cert": "bash generate-certs.sh"
+        "preview": "vite preview --host"
     },
     "dependencies": {
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
         "axios": "^1.6.0",
-        "html5-qrcode": "^2.3.8"
+        "html5-qrcode": "^2.3.8",
+        "prop-types": "^15.8.1",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
     },
     "devDependencies": {
         "@types/react": "^18.2.43",

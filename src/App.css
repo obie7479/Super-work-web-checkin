@@ -2,60 +2,24 @@
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  padding: 0;
-  min-height: 100vh;
 }
 
 .app-header {
   text-align: center;
   color: white;
-  margin-bottom: 24px;
-  padding: 20px 16px 16px;
+  margin-bottom: 32px;
 }
 
 .app-header h1 {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  line-height: 1.2;
 }
 
 .app-header .subtitle {
-  font-size: 14px;
+  font-size: 16px;
   opacity: 0.9;
-  line-height: 1.4;
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  .app-container {
-    max-width: 100%;
-  }
-
-  .app-header {
-    padding: 16px 16px 12px;
-    margin-bottom: 16px;
-  }
-
-  .app-header h1 {
-    font-size: 24px;
-    margin-bottom: 4px;
-  }
-
-  .app-header .subtitle {
-    font-size: 13px;
-  }
-}
-
-@media (max-width: 480px) {
-  .app-header h1 {
-    font-size: 22px;
-  }
-
-  .app-header .subtitle {
-    font-size: 12px;
-  }
 }
 
 .loading-container,
@@ -65,32 +29,13 @@
   padding: 48px 24px;
   text-align: center;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  margin: 16px;
-}
-
-@media (max-width: 768px) {
-  .loading-container,
-  .error-container {
-    margin: 16px;
-    padding: 32px 20px;
-    border-radius: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .loading-container,
-  .error-container {
-    margin: 12px;
-    padding: 24px 16px;
-    border-radius: 12px;
-  }
 }
 
 .spinner-large {
   width: 50px;
   height: 50px;
   border: 4px solid rgba(102, 126, 234, 0.2);
-  border-top-color: #3B82F6;
+  border-top-color: #667eea;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 24px;
@@ -127,7 +72,7 @@
   font-size: 16px;
   font-weight: 600;
   color: white;
-  background: #3B82F6;
+  background: #667eea;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -135,7 +80,7 @@
 }
 
 .retry-button:hover {
-  background: #1E40AF;
+  background: #5568d3;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }

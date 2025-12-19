@@ -32,7 +32,7 @@ export async function getUserProfile(token) {
     console.error('[ApiClient] Error fetching profile:', error);
     return {
       success: false,
-      error: error.response?.data?.message || error.message || 'An error occurred while fetching user data'
+      error: error.response?.data?.message || error.message || 'เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้'
     };
   }
 }

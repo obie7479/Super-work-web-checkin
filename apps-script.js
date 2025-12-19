@@ -32,7 +32,7 @@ function doGet(e) {
         message: 'Superwork Check-in API',
         status: 'running',
         timestamp: new Date().toISOString(),
-        note: 'Use Web App URL only (cannot be called directly from editor)'
+        note: 'เรียกใช้ผ่าน Web App URL เท่านั้น (ไม่สามารถเรียกจาก editor โดยตรงได้)'
       });
     }
     
@@ -44,7 +44,7 @@ function doGet(e) {
     if (SHEET_ID === 'YOUR_SHEET_ID_HERE') {
       return createJSONPResponse({
         success: false,
-        message: 'Please configure SHEET_ID in Apps Script code',
+        message: 'กรุณาตั้งค่า SHEET_ID ใน Apps Script code',
         error: 'SHEET_ID not configured'
       }, e.parameter.callback);
     }
@@ -53,7 +53,7 @@ function doGet(e) {
     
     // ถ้าไม่มี header ให้สร้าง
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(['NO', 'Timestamp', 'User ID', 'First Name', 'Last Name', 'Display Name', 'Avatar URL', 'Role', 'Position', 'Team', 'Date', 'Time', 'Type', 'Location']);
+      sheet.appendRow(['Timestamp', 'User ID', 'Display Name', 'Role', 'Team', 'Date', 'Time', 'Type']);
     }
     
     // ดึงข้อมูลจาก query parameters
@@ -67,7 +67,7 @@ function doGet(e) {
         message: 'Superwork Check-in API',
         status: 'running',
         timestamp: new Date().toISOString(),
-        note: 'Please specify action parameter (check or checkin)'
+        note: 'กรุณาระบุ action parameter (check หรือ checkin)'
       }, callback);
     }
     
@@ -84,8 +84,8 @@ function doGet(e) {
         }, callback);
       }
       
-      const dataRange = sheet.getRange(2, 3, lastRow - 1, 1); // User ID column (column C, shifted due to NO column)
-      const datesRange = sheet.getRange(2, 7, lastRow - 1, 1); // Date column (column G, shifted due to NO column)
+      const dataRange = sheet.getRange(2, 2, lastRow - 1, 1); // User ID column (column B)
+      const datesRange = sheet.getRange(2, 6, lastRow - 1, 1); // Date column (column F)
       const userIds = dataRange.getValues().flat();
       const dates = datesRange.getValues().flat();
       
@@ -110,21 +110,16 @@ function doGet(e) {
     // ทำการ check-in
     if (action === 'checkin') {
       const userId = e.parameter.userId;
-      const firstName = decodeURIComponent(e.parameter.firstName || '');
-      const lastName = decodeURIComponent(e.parameter.lastName || '');
       const displayName = decodeURIComponent(e.parameter.displayName || '');
-      const avatarURL = decodeURIComponent(e.parameter.avatarURL || '');
       const role = e.parameter.role || '';
-      const position = decodeURIComponent(e.parameter.position || 'N/A');
       const team = decodeURIComponent(e.parameter.team || 'N/A');
       const date = e.parameter.date;
       const time = e.parameter.time;
       const timestamp = e.parameter.timestamp || new Date().toISOString();
       const type = decodeURIComponent(e.parameter.type || 'Manual'); // 'QR Code' หรือ 'Manual'
-      const location = decodeURIComponent(e.parameter.location || 'N/A'); // Location data
       
       // Log สำหรับ debug
-      Logger.log('Check-in request - userId: ' + userId + ', date: ' + date + ', type: ' + type + ', location: ' + location);
+      Logger.log('Check-in request - userId: ' + userId + ', date: ' + date);
       
       // ตรวจสอบ duplicate ก่อนบันทึก
       const lastRow = sheet.getLastRow();
@@ -133,8 +128,8 @@ function doGet(e) {
       
       // ถ้ามีข้อมูลมากกว่า header row (row 1)
       if (lastRow > 1) {
-        const dataRange = sheet.getRange(2, 3, lastRow - 1, 1); // User ID column (C, shifted due to NO column)
-        const datesRange = sheet.getRange(2, 11, lastRow - 1, 1); // Date column (K, shifted due to new columns)
+        const dataRange = sheet.getRange(2, 2, lastRow - 1, 1); // User ID column (B)
+        const datesRange = sheet.getRange(2, 6, lastRow - 1, 1); // Date column (F)
         const userIds = dataRange.getValues().flat();
         const dates = datesRange.getValues().flat();
         
@@ -167,44 +162,30 @@ function doGet(e) {
         return createJSONPResponse({
           success: false,
           duplicate: true,
-          message: 'You have already checked in today'
+          message: 'คุณได้ทำการ check-in แล้ววันนี้'
         }, callback);
       }
       
       // บันทึกข้อมูล
       try {
         const timestampDate = new Date(timestamp);
-        
-        // คำนวณเลขลำดับถัดไป (NO)
-        // ถ้ามีแค่ header row (row 1) ให้เริ่มที่ 1, ถ้ามีข้อมูลแล้วให้ใช้ lastRow - 1
-        const nextNo = lastRow; // lastRow จะเป็น 1 ถ้ามีแค่ header, 2 ถ้ามีข้อมูล 1 แถว, etc.
-        const formattedNo = Utilities.formatString('%04d', nextNo); // Format เป็น 0001, 0002, etc.
-        
-        Logger.log('Appending row with NO: ' + formattedNo);
-        Logger.log('Appending row: ' + JSON.stringify([formattedNo, timestampDate, userId, firstName, lastName, displayName, avatarURL, role, position, team, date, time, type, location]));
+        Logger.log('Appending row: ' + JSON.stringify([timestampDate, userId, displayName, role, team, date, time]));
         
         sheet.appendRow([
-          formattedNo,
           timestampDate,
           userId,
-          firstName,
-          lastName,
           displayName,
-          avatarURL,
           role,
-          position,
           team,
           date,
-          time,
-          type,
-          location
+          time
         ]);
         
         Logger.log('Row appended successfully');
         
         return createJSONPResponse({
           success: true,
-          message: 'Check-in successful',
+          message: 'Check-in สำเร็จ',
           data: {
             userId: userId,
             date: date,
@@ -215,78 +196,16 @@ function doGet(e) {
         Logger.log('Error appending row: ' + appendError.toString());
         return createJSONPResponse({
           success: false,
-          message: 'Error saving data: ' + appendError.toString()
+          message: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + appendError.toString()
         }, callback);
       }
-    }
-    
-    // ดึงประวัติการ check-in
-    if (action === 'history') {
-      const userId = e.parameter.userId;
-      const limit = parseInt(e.parameter.limit || '50'); // จำกัดจำนวนรายการ (default 50)
-      
-      Logger.log('Fetching history for userId: ' + userId + ', limit: ' + limit);
-      
-      const lastRow = sheet.getLastRow();
-      if (lastRow <= 1) {
-        // ถ้ามีแค่ header หรือไม่มีข้อมูล
-        return createJSONPResponse({
-          success: true,
-          history: [],
-          count: 0
-        }, callback);
-      }
-      
-      // ดึงข้อมูลทั้งหมด (เริ่มจาก row 2 เพราะ row 1 เป็น header)
-      // Columns: NO, Timestamp, User ID, First Name, Last Name, Display Name, Avatar URL, Role, Position, Team, Date, Time, Type, Location
-      const dataRange = sheet.getRange(2, 1, lastRow - 1, 14);
-      const allData = dataRange.getValues();
-      
-      // กรองข้อมูลเฉพาะ userId ที่ต้องการ
-      const userHistory = allData
-        .filter(row => String(row[2]).trim() === String(userId).trim()) // Column C (index 2) = User ID
-        .map(row => ({
-          no: row[0] || '', // NO
-          timestamp: row[1] instanceof Date 
-            ? Utilities.formatDate(row[1], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss')
-            : String(row[1] || ''), // Timestamp
-          userId: String(row[2] || ''), // User ID
-          firstName: String(row[3] || ''), // First Name
-          lastName: String(row[4] || ''), // Last Name
-          displayName: String(row[5] || ''), // Display Name
-          avatarURL: String(row[6] || ''), // Avatar URL
-          role: String(row[7] || ''), // Role
-          position: String(row[8] || ''), // Position
-          team: String(row[9] || ''), // Team
-          date: row[10] instanceof Date
-            ? Utilities.formatDate(row[10], Session.getScriptTimeZone(), 'yyyy-MM-dd')
-            : String(row[10] || ''), // Date
-          time: String(row[11] || ''), // Time
-          type: String(row[12] || ''), // Type
-          location: String(row[13] || '') // Location
-        }))
-        .sort((a, b) => {
-          // เรียงตาม timestamp ล่าสุดก่อน (descending)
-          const dateA = new Date(a.timestamp);
-          const dateB = new Date(b.timestamp);
-          return dateB - dateA;
-        })
-        .slice(0, limit); // จำกัดจำนวนรายการ
-      
-      Logger.log('Found ' + userHistory.length + ' history records');
-      
-      return createJSONPResponse({
-        success: true,
-        history: userHistory,
-        count: userHistory.length
-      }, callback);
     }
     
     // ถ้า action ไม่ถูกต้อง
     Logger.log('Invalid action: ' + action);
     return createJSONPResponse({
       success: false,
-      message: 'Invalid action. Use "check", "checkin", or "history" only',
+      message: 'Invalid action. ใช้ "check" หรือ "checkin" เท่านั้น',
       receivedAction: action,
       timestamp: new Date().toISOString()
     }, callback);
@@ -300,7 +219,7 @@ function doGet(e) {
     
     return createJSONPResponse({
       success: false,
-      message: 'An error occurred: ' + error.toString()
+      message: 'เกิดข้อผิดพลาด: ' + error.toString()
     }, callback);
   }
 }
@@ -338,7 +257,7 @@ function doPost(e) {
     
     // ถ้าไม่มี header ให้สร้าง
     if (sheet.getLastRow() === 0) {
-      sheet.appendRow(['NO', 'Timestamp', 'User ID', 'First Name', 'Last Name', 'Display Name', 'Avatar URL', 'Role', 'Position', 'Team', 'Date', 'Time', 'Type', 'Location']);
+      sheet.appendRow(['Timestamp', 'User ID', 'Display Name', 'Role', 'Team', 'Date', 'Time', 'Type']);
     }
     
     // ตรวจสอบ duplicate
@@ -351,8 +270,8 @@ function doPost(e) {
         });
       }
       
-      const dataRange = sheet.getRange(2, 3, lastRow - 1, 1); // User ID column (C, shifted due to NO column)
-      const datesRange = sheet.getRange(2, 7, lastRow - 1, 1); // Date column (G, shifted due to NO column)
+      const dataRange = sheet.getRange(2, 2, lastRow - 1, 1);
+      const datesRange = sheet.getRange(2, 6, lastRow - 1, 1);
       const userIds = dataRange.getValues().flat();
       const dates = datesRange.getValues().flat();
       
@@ -372,8 +291,8 @@ function doPost(e) {
       let exists = false;
       
       if (lastRow > 0) {
-        const dataRange = sheet.getRange(2, 3, lastRow - 1, 1); // User ID column (C, shifted due to NO column)
-        const datesRange = sheet.getRange(2, 11, lastRow - 1, 1); // Date column (K, shifted due to new columns)
+        const dataRange = sheet.getRange(2, 2, lastRow - 1, 1);
+        const datesRange = sheet.getRange(2, 6, lastRow - 1, 1);
         const userIds = dataRange.getValues().flat();
         const dates = datesRange.getValues().flat();
         
@@ -386,34 +305,21 @@ function doPost(e) {
         return createJSONResponse({
           success: false,
           duplicate: true,
-          message: 'You have already checked in today'
+          message: 'คุณได้ทำการ check-in แล้ววันนี้'
         });
       }
       
       const timestamp = new Date(data.timestamp);
       const type = data.type || 'Manual';
-      const location = data.location || 'N/A';
-      
-      // คำนวณเลขลำดับถัดไป (NO)
-      // ใช้ lastRow ที่ประกาศไว้แล้วด้านบน
-      const nextNo = lastRow; // lastRow จะเป็น 1 ถ้ามีแค่ header, 2 ถ้ามีข้อมูล 1 แถว, etc.
-      const formattedNo = Utilities.formatString('%04d', nextNo); // Format เป็น 0001, 0002, etc.
-      
       sheet.appendRow([
-        formattedNo,
         timestamp,
         data.userId,
-        data.firstName || '',
-        data.lastName || '',
-        data.displayName || '',
-        data.avatarURL || '',
-        data.role || '',
-        data.position || 'N/A',
-        data.team || 'N/A',
+        data.displayName,
+        data.role,
+        data.team,
         data.date,
         data.time,
-        type,
-        location
+        type
       ]);
       
       return createJSONResponse({
@@ -427,58 +333,9 @@ function doPost(e) {
       });
     }
     
-    // ดึงประวัติการ check-in (สำหรับ POST)
-    if (data.action === 'history') {
-      const userId = data.userId;
-      const limit = parseInt(data.limit || '50');
-      
-      const lastRow = sheet.getLastRow();
-      if (lastRow <= 1) {
-        return createJSONResponse({
-          success: true,
-          history: [],
-          count: 0
-        });
-      }
-      
-      const dataRange = sheet.getRange(2, 1, lastRow - 1, 10);
-      const allData = dataRange.getValues();
-      
-      const userHistory = allData
-        .filter(row => String(row[2]).trim() === String(userId).trim())
-        .map(row => ({
-          no: row[0] || '',
-          timestamp: row[1] instanceof Date 
-            ? Utilities.formatDate(row[1], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss')
-            : String(row[1] || ''),
-          userId: String(row[2] || ''),
-          displayName: String(row[3] || ''),
-          role: String(row[4] || ''),
-          team: String(row[5] || ''),
-          date: row[6] instanceof Date
-            ? Utilities.formatDate(row[6], Session.getScriptTimeZone(), 'yyyy-MM-dd')
-            : String(row[6] || ''),
-          time: String(row[7] || ''),
-          type: String(row[8] || ''),
-          location: String(row[9] || '')
-        }))
-        .sort((a, b) => {
-          const dateA = new Date(a.timestamp);
-          const dateB = new Date(b.timestamp);
-          return dateB - dateA;
-        })
-        .slice(0, limit);
-      
-      return createJSONResponse({
-        success: true,
-        history: userHistory,
-        count: userHistory.length
-      });
-    }
-    
     return createJSONResponse({
       success: false,
-      message: 'Invalid action. Use "check", "checkin", or "history" only'
+      message: 'Invalid action'
     });
     
   } catch (error) {
