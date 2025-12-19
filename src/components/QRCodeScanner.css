@@ -94,6 +94,10 @@
   position: relative;
 }
 
+.qr-reader-hidden {
+  display: none;
+}
+
 .qr-error {
   padding: 12px 16px;
   background: #f8d7da;
@@ -127,6 +131,100 @@
   font-weight: 400;
   color: #856404;
   opacity: 0.9;
+}
+
+.qr-permission-dialog {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.98);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 20px;
+}
+
+.qr-permission-dialog-content {
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.qr-permission-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.qr-permission-dialog-content h3 {
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.qr-permission-dialog-text {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.qr-permission-dialog-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.qr-allow-button {
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #3B82F6 0%, #122991 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 56px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qr-allow-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.qr-allow-button:active {
+  transform: translateY(0);
+}
+
+.qr-cancel-button {
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #666;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 50px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qr-cancel-button:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.qr-cancel-button:active {
+  transform: translateY(1px);
 }
 
 .qr-scanner-actions {
@@ -269,6 +367,36 @@
     min-height: calc(100vh - 300px);
     flex: 1;
     border-radius: 8px;
+  }
+
+  .qr-permission-dialog {
+    padding: 16px;
+  }
+
+  .qr-permission-dialog-content {
+    max-width: 100%;
+  }
+
+  .qr-permission-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+  }
+
+  .qr-permission-dialog-content h3 {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .qr-permission-dialog-text {
+    font-size: 14px;
+  }
+
+  .qr-allow-button,
+  .qr-cancel-button {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 50px;
   }
 
   .qr-start-button,

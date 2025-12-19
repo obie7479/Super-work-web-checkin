@@ -8,6 +8,7 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState('');
   const [permissionStatus, setPermissionStatus] = useState('prompt'); // 'prompt', 'granted', 'denied'
+  const [showPermissionDialog, setShowPermissionDialog] = useState(true); // Show permission dialog first
   const html5QrCodeRef = useRef(null);
   const scannerRef = useRef(null);
 
@@ -25,15 +26,26 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
 
   const checkCameraPermission = async () => {
     try {
+      // Check if we're in a WebView (Flutter WebView)
+      const isWebView = window.navigator.standalone || 
+                       window.matchMedia('(display-mode: standalone)').matches ||
+                       /wv|WebView/i.test(navigator.userAgent);
+      
       // Check if navigator.permissions API is available
       if (navigator.permissions && navigator.permissions.query) {
-        const permissionStatus = await navigator.permissions.query({ name: 'camera' });
-        setPermissionStatus(permissionStatus.state);
-        
-        // Listen for permission changes
-        permissionStatus.onchange = () => {
+        try {
+          const permissionStatus = await navigator.permissions.query({ name: 'camera' });
           setPermissionStatus(permissionStatus.state);
-        };
+          
+          // Listen for permission changes
+          permissionStatus.onchange = () => {
+            setPermissionStatus(permissionStatus.state);
+          };
+        } catch (permErr) {
+          // Permissions API might not work in WebView, fallback to prompt
+          console.log('Permissions API not available, using fallback');
+          setPermissionStatus('prompt');
+        }
       } else {
         // Fallback: try to check if we can enumerate devices
         try {
@@ -53,22 +65,43 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
   const requestCameraPermission = async () => {
     try {
       setError('');
-      // Request camera access explicitly
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
+      setShowPermissionDialog(false); // Hide dialog when requesting permission
+      
+      // Request camera access explicitly - prefer back camera on mobile
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' }, // Prefer back camera
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       
       // Stop the stream immediately - we just needed permission
       stream.getTracks().forEach(track => track.stop());
       
       setPermissionStatus('granted');
+      
+      // Auto-start scanning after permission is granted
+      setTimeout(() => {
+        startScanning();
+      }, 100);
+      
       return true;
     } catch (err) {
       console.error('Camera permission denied:', err);
       setPermissionStatus('denied');
+      setShowPermissionDialog(true); // Show dialog again if denied
       
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError('Camera access denied. Please allow camera access in your browser');
+        // Check if in WebView
+        const isWebView = /wv|WebView/i.test(navigator.userAgent);
+        if (isWebView) {
+          setError('Camera access denied. Please grant camera permission in Flutter app settings');
+        } else {
+          setError('Camera access denied. Please allow camera access in your browser settings');
+        }
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
         setError('No camera found on your device');
       } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
@@ -98,11 +131,22 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
       const html5QrCode = new Html5Qrcode(scannerRef.current.id);
       html5QrCodeRef.current = html5QrCode;
 
+      // Detect mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      // Adjust QR box size for mobile
+      const qrboxSize = isMobile ? { width: 250, height: 250 } : { width: 300, height: 300 };
+
       await html5QrCode.start(
-        { facingMode: 'environment' }, // ใช้กล้องหลัง
+        { 
+          facingMode: { ideal: 'environment' }, // Prefer back camera on mobile
+          aspectRatio: { ideal: 1.7777777778 } // 16:9 aspect ratio
+        },
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 }
+          fps: isMobile ? 10 : 15, // Lower FPS on mobile for better performance
+          qrbox: qrboxSize,
+          aspectRatio: 1.0,
+          disableFlip: false // Allow rotation
         },
         (decodedText, decodedResult) => {
           // ตรวจสอบว่า QR code ถูกต้องหรือไม่
@@ -169,22 +213,74 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
         </div>
         
         <div className="qr-scanner-content">
-          <div className="qr-scanner-instructions">
-            <p>Please scan QR Code: <strong>AIDC2025Submit</strong></p>
-          </div>
+          {showPermissionDialog && permissionStatus !== 'granted' && (
+            <div className="qr-permission-dialog">
+              <div className="qr-permission-dialog-content">
+                <div className="qr-permission-icon">📷</div>
+                <h3>Camera Permission Required</h3>
+                <p className="qr-permission-dialog-text">
+                  This app needs access to your camera to scan QR codes.
+                </p>
+                <p className="qr-permission-dialog-text">
+                  Please click "Allow" to grant camera permission.
+                </p>
+                <div className="qr-permission-dialog-actions">
+                  <button 
+                    className="qr-allow-button" 
+                    onClick={requestCameraPermission}
+                  >
+                    Allow Camera Access
+                  </button>
+                  <button 
+                    className="qr-cancel-button" 
+                    onClick={handleClose}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
-          <div 
-            id="qr-reader" 
-            ref={scannerRef}
-            className="qr-reader"
-          ></div>
+          {!showPermissionDialog && (
+            <>
+              <div className="qr-scanner-instructions">
+                <p>Please scan QR Code: <strong>AIDC2025Submit</strong></p>
+              </div>
+
+              <div 
+                id="qr-reader" 
+                ref={scannerRef}
+                className={`qr-reader ${!isScanning ? 'qr-reader-hidden' : ''}`}
+              ></div>
+            </>
+          )}
 
           {permissionStatus === 'denied' && (
             <div className="qr-permission-warning">
               <p>⚠️ Camera access denied</p>
-              <p className="qr-permission-help">
-                Please open browser settings and allow camera access for this website
-              </p>
+              {/wv|WebView/i.test(navigator.userAgent) ? (
+                <>
+                  <p className="qr-permission-help">
+                    Please grant camera permission in your Flutter app settings
+                  </p>
+                  <p className="qr-permission-help">
+                    <strong>Android:</strong> Settings → Apps → [Your App] → Permissions → Camera → Allow
+                  </p>
+                  <p className="qr-permission-help">
+                    <strong>iOS:</strong> Settings → [Your App] → Camera → Allow
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="qr-permission-help">
+                    Please open browser settings and allow camera access for this website
+                  </p>
+                  <p className="qr-permission-help">
+                    <strong>Mobile:</strong> Settings → Site Settings → Camera → Allow
+                  </p>
+                </>
+              )}
             </div>
           )}
 
@@ -195,17 +291,7 @@ export default function QRCodeScanner({ onScanSuccess, onClose }) {
           )}
 
           <div className="qr-scanner-actions">
-            {!isScanning ? (
-              <button 
-                className="qr-start-button" 
-                onClick={startScanning}
-                disabled={permissionStatus === 'denied'}
-              >
-                {permissionStatus === 'denied' 
-                  ? 'Waiting for camera permission' 
-                  : 'Start Scanning QR Code'}
-              </button>
-            ) : (
+            {isScanning && (
               <button className="qr-stop-button" onClick={stopScanning}>
                 Stop Scanning
               </button>

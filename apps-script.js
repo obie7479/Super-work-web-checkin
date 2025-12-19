@@ -32,7 +32,7 @@ function doGet(e) {
         message: 'Superwork Check-in API',
         status: 'running',
         timestamp: new Date().toISOString(),
-        note: 'เรียกใช้ผ่าน Web App URL เท่านั้น (ไม่สามารถเรียกจาก editor โดยตรงได้)'
+        note: 'Use Web App URL only (cannot be called directly from editor)'
       });
     }
     
@@ -44,7 +44,7 @@ function doGet(e) {
     if (SHEET_ID === 'YOUR_SHEET_ID_HERE') {
       return createJSONPResponse({
         success: false,
-        message: 'กรุณาตั้งค่า SHEET_ID ใน Apps Script code',
+        message: 'Please configure SHEET_ID in Apps Script code',
         error: 'SHEET_ID not configured'
       }, e.parameter.callback);
     }
@@ -67,7 +67,7 @@ function doGet(e) {
         message: 'Superwork Check-in API',
         status: 'running',
         timestamp: new Date().toISOString(),
-        note: 'กรุณาระบุ action parameter (check หรือ checkin)'
+        note: 'Please specify action parameter (check or checkin)'
       }, callback);
     }
     
@@ -167,7 +167,7 @@ function doGet(e) {
         return createJSONPResponse({
           success: false,
           duplicate: true,
-          message: 'คุณได้ทำการ check-in แล้ววันนี้'
+          message: 'You have already checked in today'
         }, callback);
       }
       
@@ -204,7 +204,7 @@ function doGet(e) {
         
         return createJSONPResponse({
           success: true,
-          message: 'Check-in สำเร็จ',
+          message: 'Check-in successful',
           data: {
             userId: userId,
             date: date,
@@ -215,7 +215,7 @@ function doGet(e) {
         Logger.log('Error appending row: ' + appendError.toString());
         return createJSONPResponse({
           success: false,
-          message: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + appendError.toString()
+          message: 'Error saving data: ' + appendError.toString()
         }, callback);
       }
     }
@@ -282,296 +282,11 @@ function doGet(e) {
       }, callback);
     }
     
-    // ดึงตัวเลือกโหวต
-    if (action === 'getVoteOptions') {
-      Logger.log('Fetching vote options');
-      
-      const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
-      let voteOptionsSheet = spreadsheet.getSheetByName('Vote Options');
-      
-      // ถ้ายังไม่มี sheet ให้สร้าง
-      if (!voteOptionsSheet) {
-        voteOptionsSheet = spreadsheet.insertSheet('Vote Options');
-        voteOptionsSheet.appendRow(['Work/Job', 'Option 1', 'Option 2', 'Option 3']);
-        Logger.log('Created Vote Options sheet');
-      }
-      
-      const lastRow = voteOptionsSheet.getLastRow();
-      if (lastRow <= 1) {
-        // ถ้ามีแค่ header หรือไม่มีข้อมูล
-        return createJSONPResponse({
-          success: true,
-          voteOptions: []
-        }, callback);
-      }
-      
-      // ดึงข้อมูลทั้งหมด (เริ่มจาก row 2 เพราะ row 1 เป็น header)
-      const dataRange = voteOptionsSheet.getRange(2, 1, lastRow - 1, voteOptionsSheet.getLastColumn());
-      const allData = dataRange.getValues();
-      
-      // แปลงข้อมูลเป็น array of objects
-      const voteOptions = allData.map(row => {
-        const workJob = String(row[0] || '').trim();
-        const options = [];
-        
-        // ดึงตัวเลือกทั้งหมด (เริ่มจาก column 2 เป็นต้นไป)
-        for (let i = 1; i < row.length; i++) {
-          const option = String(row[i] || '').trim();
-          if (option) {
-            options.push(option);
-          }
-        }
-        
-        return {
-          workJob: workJob,
-          options: options
-        };
-      }).filter(item => item.workJob && item.options.length > 0); // กรองเฉพาะที่มี workJob และมีตัวเลือก
-      
-      Logger.log('Found ' + voteOptions.length + ' vote options');
-      
-      return createJSONPResponse({
-        success: true,
-        voteOptions: voteOptions
-      }, callback);
-    }
-    
-    // ส่งการโหวต
-    if (action === 'submitVote') {
-      const userId = e.parameter.userId;
-      const userName = decodeURIComponent(e.parameter.userName || '');
-      const workJob = decodeURIComponent(e.parameter.workJob || '');
-      const selectedOption = decodeURIComponent(e.parameter.selectedOption || '');
-      const timestamp = e.parameter.timestamp || new Date().toISOString();
-      
-      Logger.log('Submit vote - userId: ' + userId + ', workJob: ' + workJob + ', selectedOption: ' + selectedOption);
-      
-      const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
-      let voteResultsSheet = spreadsheet.getSheetByName('Vote Results');
-      
-      // ถ้ายังไม่มี sheet ให้สร้าง
-      if (!voteResultsSheet) {
-        voteResultsSheet = spreadsheet.insertSheet('Vote Results');
-        voteResultsSheet.appendRow(['Timestamp', 'User ID', 'User Name', 'Work/Job', 'Selected Option']);
-        Logger.log('Created Vote Results sheet');
-      }
-      
-      // ตรวจสอบ duplicate: User ID + Work/Job
-      const lastRow = voteResultsSheet.getLastRow();
-      let exists = false;
-      
-      if (lastRow > 1) {
-        const userIdsRange = voteResultsSheet.getRange(2, 2, lastRow - 1, 1); // User ID column (B)
-        const workJobsRange = voteResultsSheet.getRange(2, 4, lastRow - 1, 1); // Work/Job column (D)
-        const userIds = userIdsRange.getValues().flat();
-        const workJobs = workJobsRange.getValues().flat();
-        
-        exists = userIds.some((id, index) => {
-          const userIdMatch = String(id).trim() === String(userId).trim();
-          const workJobMatch = String(workJobs[index]).trim() === String(workJob).trim();
-          return userIdMatch && workJobMatch;
-        });
-        
-        Logger.log('Duplicate check - userId: ' + userId + ', workJob: ' + workJob + ', exists: ' + exists);
-      }
-      
-      if (exists) {
-        return createJSONPResponse({
-          success: false,
-          duplicate: true,
-          message: 'คุณได้ทำการโหวตงานนี้แล้ว'
-        }, callback);
-      }
-      
-      // บันทึกการโหวต
-      try {
-        const timestampDate = new Date(timestamp);
-        voteResultsSheet.appendRow([
-          timestampDate,
-          userId,
-          userName,
-          workJob,
-          selectedOption
-        ]);
-        
-        Logger.log('Vote submitted successfully');
-        
-        return createJSONPResponse({
-          success: true,
-          message: 'โหวตสำเร็จ'
-        }, callback);
-      } catch (appendError) {
-        Logger.log('Error appending vote: ' + appendError.toString());
-        return createJSONPResponse({
-          success: false,
-          message: 'เกิดข้อผิดพลาดในการบันทึกการโหวต: ' + appendError.toString()
-        }, callback);
-      }
-    }
-    
-    // ดึงผลการโหวต
-    if (action === 'getVoteResults') {
-      const workJob = e.parameter.workJob ? decodeURIComponent(e.parameter.workJob) : null;
-      
-      Logger.log('Fetching vote results - workJob: ' + workJob);
-      
-      const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
-      const voteResultsSheet = spreadsheet.getSheetByName('Vote Results');
-      
-      if (!voteResultsSheet) {
-        return createJSONPResponse({
-          success: true,
-          results: []
-        }, callback);
-      }
-      
-      const lastRow = voteResultsSheet.getLastRow();
-      if (lastRow <= 1) {
-        return createJSONPResponse({
-          success: true,
-          results: []
-        }, callback);
-      }
-      
-      // ดึงข้อมูลทั้งหมด (เริ่มจาก row 2 เพราะ row 1 เป็น header)
-      // Columns: Timestamp, User ID, User Name, Work/Job, Selected Option
-      const dataRange = voteResultsSheet.getRange(2, 1, lastRow - 1, 5);
-      const allData = dataRange.getValues();
-      
-      // กรองข้อมูลตาม workJob (ถ้ามี)
-      let filteredData = allData;
-      if (workJob) {
-        filteredData = allData.filter(row => String(row[3]).trim() === String(workJob).trim());
-      }
-      
-      // นับจำนวนโหวตแยกตามแต่ละตัวเลือก
-      const voteCounts = {};
-      filteredData.forEach(row => {
-        const selectedOption = String(row[4] || '').trim();
-        if (selectedOption) {
-          voteCounts[selectedOption] = (voteCounts[selectedOption] || 0) + 1;
-        }
-      });
-      
-      // แปลงเป็น array
-      const results = Object.keys(voteCounts).map(option => ({
-        option: option,
-        count: voteCounts[option]
-      })).sort((a, b) => b.count - a.count); // เรียงตามจำนวนโหวตมากไปน้อย
-      
-      Logger.log('Found ' + results.length + ' vote result groups');
-      
-      return createJSONPResponse({
-        success: true,
-        results: results,
-        totalVotes: filteredData.length
-      }, callback);
-    }
-    
-    // ตรวจสอบว่าผู้ใช้โหวตแล้วหรือยัง
-    if (action === 'checkVote') {
-      const userId = e.parameter.userId;
-      const workJob = e.parameter.workJob ? decodeURIComponent(e.parameter.workJob) : null;
-      
-      Logger.log('Checking vote - userId: ' + userId + ', workJob: ' + workJob);
-      
-      const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
-      const voteResultsSheet = spreadsheet.getSheetByName('Vote Results');
-      
-      if (!voteResultsSheet || voteResultsSheet.getLastRow() <= 1) {
-        return createJSONPResponse({
-          success: true,
-          hasVoted: false
-        }, callback);
-      }
-      
-      const lastRow = voteResultsSheet.getLastRow();
-      const userIdsRange = voteResultsSheet.getRange(2, 2, lastRow - 1, 1); // User ID column (B)
-      const workJobsRange = voteResultsSheet.getRange(2, 4, lastRow - 1, 1); // Work/Job column (D)
-      const userIds = userIdsRange.getValues().flat();
-      const workJobs = workJobsRange.getValues().flat();
-      
-      let hasVoted = false;
-      
-      if (workJob) {
-        // ตรวจสอบเฉพาะ workJob ที่ระบุ
-        hasVoted = userIds.some((id, index) => {
-          const userIdMatch = String(id).trim() === String(userId).trim();
-          const workJobMatch = String(workJobs[index]).trim() === String(workJob).trim();
-          return userIdMatch && workJobMatch;
-        });
-      } else {
-        // ตรวจสอบว่ามีการโหวตงานไหนบ้าง
-        const votedWorkJobs = [];
-        userIds.forEach((id, index) => {
-          if (String(id).trim() === String(userId).trim()) {
-            votedWorkJobs.push(String(workJobs[index]).trim());
-          }
-        });
-        hasVoted = votedWorkJobs.length > 0;
-        
-        return createJSONPResponse({
-          success: true,
-          hasVoted: hasVoted,
-          votedWorkJobs: votedWorkJobs
-        }, callback);
-      }
-      
-      return createJSONPResponse({
-        success: true,
-        hasVoted: hasVoted
-      }, callback);
-    }
-    
-    // ดึงข้อมูลการโหวตของผู้ใช้ (เพื่อแสดงตัวเลือกที่โหวตไปแล้ว)
-    if (action === 'getUserVote') {
-      const userId = e.parameter.userId;
-      const workJob = e.parameter.workJob ? decodeURIComponent(e.parameter.workJob) : null;
-      
-      Logger.log('Getting user vote - userId: ' + userId + ', workJob: ' + workJob);
-      
-      const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
-      const voteResultsSheet = spreadsheet.getSheetByName('Vote Results');
-      
-      if (!voteResultsSheet || voteResultsSheet.getLastRow() <= 1) {
-        return createJSONPResponse({
-          success: true,
-          userVotes: {}
-        }, callback);
-      }
-      
-      const lastRow = voteResultsSheet.getLastRow();
-      // Columns: Timestamp, User ID, User Name, Work/Job, Selected Option
-      const dataRange = voteResultsSheet.getRange(2, 1, lastRow - 1, 5);
-      const allData = dataRange.getValues();
-      
-      // กรองข้อมูลเฉพาะ userId
-      const userVotes = {};
-      allData.forEach(row => {
-        const rowUserId = String(row[1] || '').trim();
-        const rowWorkJob = String(row[3] || '').trim();
-        const selectedOption = String(row[4] || '').trim();
-        
-        if (String(rowUserId).trim() === String(userId).trim()) {
-          if (!workJob || rowWorkJob === workJob) {
-            userVotes[rowWorkJob] = selectedOption;
-          }
-        }
-      });
-      
-      Logger.log('Found ' + Object.keys(userVotes).length + ' user votes');
-      
-      return createJSONPResponse({
-        success: true,
-        userVotes: userVotes
-      }, callback);
-    }
-    
     // ถ้า action ไม่ถูกต้อง
     Logger.log('Invalid action: ' + action);
     return createJSONPResponse({
       success: false,
-      message: 'Invalid action. ใช้ "check", "checkin", "history", "getVoteOptions", "submitVote", "getVoteResults", หรือ "checkVote" เท่านั้น',
+      message: 'Invalid action. Use "check", "checkin", or "history" only',
       receivedAction: action,
       timestamp: new Date().toISOString()
     }, callback);
@@ -585,7 +300,7 @@ function doGet(e) {
     
     return createJSONPResponse({
       success: false,
-      message: 'เกิดข้อผิดพลาด: ' + error.toString()
+      message: 'An error occurred: ' + error.toString()
     }, callback);
   }
 }
@@ -671,7 +386,7 @@ function doPost(e) {
         return createJSONResponse({
           success: false,
           duplicate: true,
-          message: 'คุณได้ทำการ check-in แล้ววันนี้'
+          message: 'You have already checked in today'
         });
       }
       
@@ -763,7 +478,7 @@ function doPost(e) {
     
     return createJSONResponse({
       success: false,
-      message: 'Invalid action. ใช้ "check", "checkin", หรือ "history" เท่านั้น'
+      message: 'Invalid action. Use "check", "checkin", or "history" only'
     });
     
   } catch (error) {

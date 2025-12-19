@@ -3,14 +3,12 @@ import { getUserProfile } from './services/api';
 import UserProfile from './components/UserProfile';
 import CheckInButton from './components/CheckInButton';
 import CheckInHistory from './components/CheckInHistory';
-import VoteSection from './components/VoteSection';
 import './App.css';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('checkin'); // 'checkin' or 'vote'
 
   useEffect(() => {
     // อ่าน token จาก URL query parameter
@@ -97,40 +95,8 @@ function App() {
       </div>
       
       <UserProfile user={user} />
-      
-      <div className="tabs-container">
-        <div className="tabs-nav">
-          <button
-            className={`tab-button ${activeTab === 'checkin' ? 'active' : ''}`}
-            onClick={() => setActiveTab('checkin')}
-          >
-            <span className="tab-icon">✓</span>
-            <span>Check-in</span>
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'vote' ? 'active' : ''}`}
-            onClick={() => setActiveTab('vote')}
-          >
-            <span className="tab-icon">🗳️</span>
-            <span>Vote</span>
-          </button>
-        </div>
-        
-        <div className="tab-content">
-          {activeTab === 'checkin' && (
-            <div className="checkin-tab">
-              <CheckInButton user={user} onCheckInSuccess={handleCheckInSuccess} />
-              <CheckInHistory userId={user.id} />
-            </div>
-          )}
-          
-          {activeTab === 'vote' && (
-            <div className="vote-tab">
-              <VoteSection user={user} />
-            </div>
-          )}
-        </div>
-      </div>
+      <CheckInButton user={user} onCheckInSuccess={handleCheckInSuccess} />
+      <CheckInHistory userId={user.id} />
     </div>
   );
 }
